@@ -23,7 +23,7 @@
     "compression": "^1.8.1",
     "dotenv": "^17.2.3",
     "express": "^4.22.1",
-    "express-rate-limit": "^8.5.0",
+    "express-rate-limit": "^7.4.0",
     "groq-sdk": "^0.37.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.546.0",
