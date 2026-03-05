@@ -1,0 +1,5 @@
+{
+  "name": "Awaz - Urdu TTS",
+  "description": "Premium Urdu Text-to-Speech SaaS Platform",
+  "requestFramePermissions": ["microphone"]
+}

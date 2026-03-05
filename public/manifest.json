@@ -1,0 +1,24 @@
+{
+    "name": "Awaz — Urdu Voice AI",
+    "short_name": "Awaz",
+    "description": "Pakistan's most advanced Urdu Text-to-Speech and AI Conversation app",
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#080810",
+    "theme_color": "#080810",
+    "categories": [
+        "productivity",
+        "utilities"
+    ],
+    "icons": [
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "prefer_related_applications": false
+}
