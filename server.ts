@@ -23,7 +23,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 
 // ─── Database ───────────────────────────────────────────
-const db = new Database(path.join(__dirname, "awaz.db"));
+const db = new Database(path.join(process.cwd(), "awaz.db"));
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
