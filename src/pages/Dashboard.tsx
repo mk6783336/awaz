@@ -77,7 +77,7 @@ export default function Dashboard() {
 
   const handleDownload = useCallback(() => {
     if (!audioBlob) return;
-    const a = document.createElement("a"); a.href = URL.createObjectURL(audioBlob); a.download = `awaz-${voice}-${Date.now()}.wav`; a.click(); toast("Downloaded", "success");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(audioBlob); a.download = `awaz-${voice}-${Date.now()}.mp3`; a.click(); toast("Downloaded", "success");
   }, [audioBlob, voice, toast]);
 
   const fmt = (t: number) => `${Math.floor(t / 60)}:${Math.floor(t % 60).toString().padStart(2, "0")}`;

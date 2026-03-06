@@ -24,7 +24,7 @@ export async function generateSpeech(opts: TTSOptions) {
     true
   );
 
-  const audioBlob = new Blob([await res.arrayBuffer()], { type: "audio/wav" });
+  const audioBlob = new Blob([await res.arrayBuffer()], { type: "audio/mpeg" });
   const audioUrl = URL.createObjectURL(audioBlob);
   const duration = parseFloat(res.headers.get("X-Audio-Duration") || "0");
   const audioId = res.headers.get("X-Audio-Id") || "";

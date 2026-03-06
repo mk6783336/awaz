@@ -50,8 +50,8 @@ export default function History() {
   const handleDownload = useCallback(async (id: string, voice: string) => {
     try {
       const res = await apiFetch(`/api/history/${id}/audio`, {}, true);
-      const blob = new Blob([await res.arrayBuffer()], { type: "audio/wav" });
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `awaz-${voice}-${id.slice(0, 8)}.wav`; a.click();
+      const blob = new Blob([await res.arrayBuffer()], { type: "audio/mpeg" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `awaz-${voice}-${id.slice(0, 8)}.mp3`; a.click();
       toast("Downloaded", "success");
     } catch { toast("Download failed", "error"); }
   }, [toast]);
