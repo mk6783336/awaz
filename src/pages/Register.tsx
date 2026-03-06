@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { useStore } from "../store/useStore";
 import { apiFetch } from "../services/api";
 import { useToast } from "../components/Toast";
 import { User, Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
+import Logo from "../components/Logo";
 
 function getStrength(p: string) {
   if (p.length < 8) return { label: "Too short", color: "bg-error", w: "20%" };
@@ -48,8 +49,8 @@ export default function Register() {
     <div className="min-h-[100dvh] flex items-center justify-center px-4 py-6 bg-bg-primary relative">
       <div className="orb" />
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="w-full max-w-[380px] relative z-10">
-        <div className="text-center mb-6">
-          <h1 className="font-display text-2xl font-bold gradient-text mb-1">Join Awaz</h1>
+        <div className="flex flex-col items-center mb-6">
+          <Logo size="lg" className="mb-2" />
           <p className="text-[13px] text-text-secondary">Start with 10,000 free credits</p>
         </div>
         <form onSubmit={handleSubmit} className="glass p-5 space-y-4">

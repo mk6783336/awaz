@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowRight, Mic, Bot, Zap, ChevronRight } from "lucide-react";
 import AdBanner from "../components/AdBanner";
+import Logo from "../components/Logo";
 
 const features = [
   { icon: Mic, title: "Natural Urdu Voices", desc: "5 distinct voices with regional accents and emotional range" },
@@ -25,11 +26,11 @@ export default function Landing() {
     <div className="min-h-[100dvh] bg-bg-primary overflow-x-hidden">
       {/* ═══ NAVBAR ═══ */}
       <nav className="fixed top-0 w-full z-50 bg-bg-primary/80 backdrop-blur-xl border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <h1 className="font-display text-lg font-bold gradient-text">Awaz</h1>
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigate("/login")} className="btn-ghost !py-1.5 !px-3 !text-[13px] !min-h-[36px]">Sign In</button>
-            <button onClick={() => navigate("/register")} className="btn-primary !py-1.5 !px-3 !text-[13px] !min-h-[36px]">Start Free</button>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <Logo size="sm" />
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => navigate("/login")} className="btn-ghost !py-1.5 !px-3.5 !text-[13px] !min-h-[36px]">Sign In</button>
+            <button onClick={() => navigate("/register")} className="btn-primary !py-1.5 !px-3.5 !text-[13px] !min-h-[36px]">Start Free</button>
           </div>
         </div>
       </nav>

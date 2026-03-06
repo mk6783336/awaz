@@ -5,7 +5,7 @@ import { apiFetch } from "../services/api";
 import { generateSpeech } from "../services/ttsService";
 import { useToast } from "../components/Toast";
 import AdBanner from "../components/AdBanner";
-import { Play, Pause, Download, Loader2, Sparkles, ChevronDown, ChevronUp, Volume2, Mic, Zap } from "lucide-react";
+import { Play, Pause, Download, Loader2, Sparkles, ChevronDown, ChevronUp, Volume2, Mic, Zap, Clock } from "lucide-react";
 
 const VOICES = [
   { id: "ayesha", name: "Ayesha", gender: "F", color: "from-pink-500 to-rose-500" },
@@ -43,6 +43,16 @@ export default function Dashboard() {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<number | null>(null);
+  const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
+  const [dailyLimit, setDailyLimit] = useState(10);
+
+  // Fetch daily usage on mount
+  useEffect(() => {
+    apiFetch("/api/tts/usage").then((d) => {
+      setDailyRemaining(d.remaining);
+      setDailyLimit(d.limit);
+    }).catch(() => { });
+  }, []);
 
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl); if (timerRef.current) clearInterval(timerRef.current); }, [audioUrl]);
 
@@ -53,6 +63,8 @@ export default function Dashboard() {
       const r = await generateSpeech({ text, voiceName: voice, speed, pitch, style });
       setAudioUrl(r.audioUrl); setAudioBlob(r.audioBlob); setDuration(r.duration);
       toast("Audio generated!", "success");
+      // Update daily remaining
+      setDailyRemaining((prev) => prev !== null ? Math.max(0, prev - 1) : null);
     } catch (err: any) { toast(err.message, "error"); }
     finally { setGenerating(false); }
   }, [text, voice, speed, pitch, style, toast]);
@@ -83,14 +95,14 @@ export default function Dashboard() {
   const fmt = (t: number) => `${Math.floor(t / 60)}:${Math.floor(t % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div className="p-3 md:p-6 lg:p-8 space-y-4 max-w-6xl mx-auto">
+    <div className="p-4 md:p-6 lg:p-8 space-y-4 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">TTS Studio</h1>
-          <p className="text-[12px] text-text-secondary mt-0.5 hidden sm:block">Transform Urdu text into natural speech</p>
+          <h1 className="text-lg md:text-xl font-bold tracking-tight">TTS Studio</h1>
+          <p className="text-[11px] md:text-[12px] text-text-secondary mt-0.5">Transform Urdu text into natural speech</p>
         </div>
-        <div className="glass px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+        <div className="hidden md:flex glass px-3 py-1.5 items-center gap-1.5 flex-shrink-0">
           <Zap size={12} className="text-accent" />
           <span className="text-[13px] font-bold text-accent">{user?.credits?.toLocaleString()}</span>
         </div>
@@ -166,9 +178,16 @@ export default function Dashboard() {
               )}
             </AnimatePresence>
 
-            <button onClick={handleGenerate} disabled={generating || !text.trim()} className="btn-primary w-full !py-3">
+            <button onClick={handleGenerate} disabled={generating || !text.trim() || dailyRemaining === 0} className="btn-primary w-full !py-3">
               {generating ? <><Loader2 size={16} className="animate-spin" /> Generating...</> : <><Volume2 size={16} /> Generate Speech</>}
             </button>
+            {dailyRemaining !== null && (
+              <div className={`flex items-center justify-center gap-1.5 text-[11px] font-medium mt-2 ${dailyRemaining === 0 ? "text-error" : dailyRemaining <= 3 ? "text-amber-400" : "text-text-muted"}`}>
+                <Clock size={11} />
+                <span>{dailyRemaining}/{dailyLimit} remaining today</span>
+                {dailyRemaining === 0 && <span className="text-[10px]">· Resets at midnight</span>}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useStore } from "./store/useStore";
 
@@ -36,6 +36,38 @@ function GuestRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { token, setUser, clearUser, ready, setReady } = useStore();
+  const [initializing, setInitializing] = useState(!ready && !!token);
+
+  // Validate stored token on first mount
+  useEffect(() => {
+    if (ready) return;
+    if (!token) {
+      setReady();
+      return;
+    }
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user, token);
+        } else {
+          clearUser();
+        }
+      } catch {
+        // Network error — keep stored state, don't force logout
+      } finally {
+        setReady();
+        setInitializing(false);
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (initializing) return <Loader />;
+
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
@@ -51,3 +83,4 @@ export default function App() {
     </Suspense>
   );
 }
+

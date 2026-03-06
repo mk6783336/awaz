@@ -12,7 +12,7 @@ import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
 import rateLimit from "express-rate-limit";
-import { MsEdgeTTS, OUTPUT_FORMAT } from "edge-tts-node";
+// edge-tts-node removed — using Google Gemini TTS instead
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -138,14 +138,37 @@ function getRemainingToday(userId: string): number {
   return Math.max(0, DAILY_TTS_LIMIT - getDailyUsage(userId));
 }
 
-// ─── Voice Map (Microsoft Edge TTS - Urdu voices) ─────────
+// ─── Voice Map (Google Gemini prebuilt voices) ────────────
 const VOICE_MAP: Record<string, string> = {
-  ayesha: "ur-PK-UzmaNeural",  // Female, Standard Urdu
-  bilal: "ur-PK-AsadNeural",  // Male, Standard Urdu
-  tariq: "ur-PK-AsadNeural",  // Male
-  zain: "ur-PK-AsadNeural",  // Male
-  fatima: "ur-PK-UzmaNeural",  // Female
+  ayesha: "Aoede",   // Female
+  bilal: "Charon",   // Male
+  tariq: "Fenrir",   // Male
+  zain: "Orus",      // Male
+  fatima: "Kore",    // Female
 };
+
+// ─── WAV Header Helper ────────────────────────────────────
+function createWavHeader(dataSize: number, sampleRate: number, channels: number, bitsPerSample: number): Buffer {
+  const header = Buffer.alloc(44);
+  const byteRate = sampleRate * channels * (bitsPerSample / 8);
+  const blockAlign = channels * (bitsPerSample / 8);
+
+  header.write("RIFF", 0);                          // ChunkID
+  header.writeUInt32LE(36 + dataSize, 4);           // ChunkSize
+  header.write("WAVE", 8);                           // Format
+  header.write("fmt ", 12);                          // Subchunk1ID
+  header.writeUInt32LE(16, 16);                     // Subchunk1Size (PCM)
+  header.writeUInt16LE(1, 20);                      // AudioFormat (PCM)
+  header.writeUInt16LE(channels, 22);               // NumChannels
+  header.writeUInt32LE(sampleRate, 24);             // SampleRate
+  header.writeUInt32LE(byteRate, 28);               // ByteRate
+  header.writeUInt16LE(blockAlign, 32);             // BlockAlign
+  header.writeUInt16LE(bitsPerSample, 34);          // BitsPerSample
+  header.write("data", 36);                          // Subchunk2ID
+  header.writeUInt32LE(dataSize, 40);               // Subchunk2Size
+
+  return header;
+}
 
 // ─── Sanitize ─────────────────────────────────────────────
 function sanitizeText(text: string): string {
@@ -291,7 +314,7 @@ async function startServer() {
     }
   );
 
-  // ═══ TTS (Microsoft Edge TTS - Free & Unlimited) ══════════
+  // ═══ TTS (Google Gemini TTS — Free & Reliable) ═══════════
   app.post(
     "/api/tts",
     authenticateToken as any,
@@ -328,28 +351,37 @@ async function startServer() {
           return;
         }
 
-        const voice =
-          VOICE_MAP[voiceName.toLowerCase()] || "ur-PK-AsadNeural";
+        const voice = VOICE_MAP[voiceName.toLowerCase()] || "Kore";
 
-        // ── Generate with Microsoft Edge TTS ──────────────
-        const tts = new MsEdgeTTS();
-        await tts.setMetadata(
-          voice,
-          OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3
-        );
+        // ── Generate with Google Gemini TTS ─────────────────
+        const { GoogleGenAI } = await import("@google/genai");
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-        const { audioStream } = await tts.toStream(text);
-
-        // Collect stream into buffer
-        const chunks: Buffer[] = [];
-        await new Promise<void>((resolve, reject) => {
-          audioStream.on("data", (chunk: Buffer) => chunks.push(chunk));
-          audioStream.on("end", resolve);
-          audioStream.on("error", reject);
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash-preview-tts",
+          contents: [{ parts: [{ text }] }],
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: voice,
+                },
+              },
+            },
+          },
         });
 
-        const audioBuffer = Buffer.concat(chunks);
-        const duration = audioBuffer.length / (24000 * 2);
+        const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (!audioData) {
+          throw new Error("No audio data received from Gemini");
+        }
+
+        // Gemini returns raw PCM data (24kHz, 16-bit, mono) — wrap in WAV header
+        const pcmBuffer = Buffer.from(audioData, "base64");
+        const wavHeader = createWavHeader(pcmBuffer.length, 24000, 1, 16);
+        const audioBuffer = Buffer.concat([wavHeader, pcmBuffer]);
+        const duration = pcmBuffer.length / (24000 * 2); // 24kHz * 2 bytes per sample
 
         // ── Save to DB ────────────────────────────────────
         const historyId = uuidv4();
@@ -368,7 +400,7 @@ async function startServer() {
         incrementDailyUsage(req.user!.id);
         const remaining = getRemainingToday(req.user!.id);
 
-        res.set("Content-Type", "audio/mpeg");
+        res.set("Content-Type", "audio/wav");
         res.set("X-Audio-Id", historyId);
         res.set("X-Audio-Duration", duration.toFixed(2));
         res.set("X-Daily-Remaining", remaining.toString());
